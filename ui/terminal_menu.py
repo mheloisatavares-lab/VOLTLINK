@@ -1,39 +1,56 @@
 import os
 import webbrowser
 from core import user_manager, station_manager, pagamento
-from ui import logo4_VoltLink
+from ui import logo_VoltLink
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def show_registration_screen():
     """Exibe a tela de cadastro e gerencia o fluxo."""
-    clear_screen()
-    print("   CADASTRO VOLTLINK   ")
-    
-    name = input("Digite seu nome completo: ").strip()
-    email = input("Digite seu email: ").strip().lower()
-    phone = input("Digite seu telefone (11 dígitos, apenas números): ").strip()
-    password = input("Crie uma senha (4-8 caracteres, 1 número, 1 maiúscula): ").strip()
-    confirm_password = input("Confirme sua senha: ").strip()
+    name = ""
+    email = ""
+    phone = ""
 
-    is_valid, message = user_manager.validate_registration_data(name, email, phone, password, confirm_password)
+    while True:
+        clear_screen()
+        print("   CADASTRO VOLTLINK   ")
+        if name or email or phone:
+            print("   (Dica: Deixe em branco e pressione Enter para manter o dado já digitado)\n")
+        
+        new_name = input(f"Digite seu nome completo [{name}]: " if name else "Digite seu nome completo: ").strip()
+        if new_name: name = new_name
+        
+        new_email = input(f"Digite seu email [{email}]: " if email else "Digite seu email: ").strip().lower()
+        if new_email: email = new_email
+        
+        new_phone = input(f"Digite seu telefone (11 dígitos) [{phone}]: " if phone else "Digite seu telefone (11 dígitos, apenas números): ").strip()
+        if new_phone: phone = new_phone
+        
+        # Senhas sempre precisam ser redigitadas por segurança
+        password = input("Crie uma senha (4-8 caracteres, 1 número, 1 maiúscula): ").strip()
+        confirm_password = input("Confirme sua senha: ").strip()
 
-    if not is_valid:
-        print(f"\n{message}")
-        input("\nPressione Enter para tentar novamente...")
-        return
+        is_valid, message = user_manager.validate_registration_data(name, email, phone, password, confirm_password)
 
-    # Se a validação passou, registra o usuário
-    user_manager.register_new_user(name, email, phone, password)
-    print("\nCadastro realizado com sucesso!")
-    print(f"Usuário: {name} ({email})")
-    input("\nPressione Enter para voltar ao menu...")
+        if not is_valid:
+            print(f"\n{message}")
+            opcao = input("\nDeseja corrigir os dados agora? (S/N): ").strip().upper()
+            if opcao == 'N':
+                return
+            continue
+
+        # Se a validação passou, registra o usuário
+        user_manager.register_new_user(name, email, phone, password)
+        print("\nCadastro realizado com sucesso!")
+        print(f"Usuário: {name} ({email})")
+        input("\nPressione Enter para voltar ao menu...")
+        break
 
 def show_login_screen():
     """Exibe a tela de login e gerencia o fluxo."""
     clear_screen()
-    logo4_VoltLink.display_header()
+    logo_VoltLink.display_header()
     print("   LOGIN VOLTLINK   ")
     
     email = input("Digite seu email: ").strip().lower()
@@ -59,7 +76,7 @@ def show_user_dashboard(user_data):
     while True:
         try:
             clear_screen()
-            logo4_VoltLink.display_header()
+            logo_VoltLink.display_header()
             tipo_conta = "ADMINISTRADOR" if is_admin else "USUÁRIO"
             print(f"   PAINEL DO {tipo_conta} - {user_name.upper()}   \n")
             
@@ -78,7 +95,7 @@ def show_user_dashboard(user_data):
             
             if option == '1':
                 clear_screen()
-                logo4_VoltLink.display_header()
+                logo_VoltLink.display_header()
                 print("📍 Localização e Planeamento de Rotas \n")
                 print("Esta funcionalidade é o coração do seu planeamento. Com base na sua localização atual")
                 print("ou no ponto inicial da viagem, o VoltLink calcula as rotas mais eficientes,")
@@ -117,7 +134,7 @@ def show_user_dashboard(user_data):
             elif option == '2':
                 while True:
                     clear_screen()
-                    logo4_VoltLink.display_header()
+                    logo_VoltLink.display_header()
                     print("💳 Gestão de Pagamentos \n")
                     
                     methods = pagamento.get_payment_methods(user_data['id'])
@@ -174,7 +191,7 @@ def show_user_dashboard(user_data):
                         input("\nPressione Enter para tentar novamente...")
             elif option == '3':
                 clear_screen()
-                logo4_VoltLink.display_header()
+                logo_VoltLink.display_header()
                 print("🚗 Dados sobre o Veículo \n")
                 print("-" * 40)
                 print("AVISO: Função em desenvolvimento!")
@@ -182,7 +199,7 @@ def show_user_dashboard(user_data):
                 input("\nPressione Enter para voltar ao painel...")
             elif option == '4':
                 clear_screen()
-                logo4_VoltLink.display_header()
+                logo_VoltLink.display_header()
                 print("✅ Check-in \n")
                 print("-" * 40)
                 print("AVISO: Função em desenvolvimento!")
@@ -190,7 +207,7 @@ def show_user_dashboard(user_data):
                 input("\nPressione Enter para voltar ao painel...")
             elif option == '5':
                 clear_screen()
-                logo4_VoltLink.display_header()
+                logo_VoltLink.display_header()
                 print("⭐ Avaliar Eletropostos \n")
                 
                 stations = station_manager.get_all_stations()
@@ -238,7 +255,7 @@ def show_user_dashboard(user_data):
                 break
             elif option == '7' and is_admin:
                 clear_screen()
-                logo4_VoltLink.display_header()
+                logo_VoltLink.display_header()
                 print("🛠️  [Admin] Cadastrar Eletroposto \n")
                 nome_posto = input("Nome do Eletroposto (ex: VoltLink Centro): ").strip()
                 end_posto = input("Endereço completo (ex: Av. Paulista, 1000, São Paulo): ").strip()
@@ -253,7 +270,7 @@ def show_user_dashboard(user_data):
                 input("\nPressione Enter para voltar ao painel...")
             elif option == '8' and is_admin:
                 clear_screen()
-                logo4_VoltLink.display_header()
+                logo_VoltLink.display_header()
                 print("🔄  [Admin] Atualizar Carregadores Disponíveis \n")
                 
                 stations = station_manager.get_all_stations()
@@ -284,7 +301,7 @@ def show_main_menu():
     while True:
         try:
             clear_screen()
-            logo4_VoltLink.display_header()
+            logo_VoltLink.display_header()
 
             print("1. Login")
             print("2. Cadastro")

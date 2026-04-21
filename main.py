@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import db_handler
 from ui import terminal_menu
-from ui import logo4_VoltLink
+from ui import logo_VoltLink
 
 def main():
     """Função principal que inicia a aplicação."""
@@ -14,7 +14,7 @@ def main():
     db_handler.create_tables()
 
     # 2. Exibe a animação de inicialização.
-    logo4_VoltLink.run_animation(show_cursor=False)
+    logo_VoltLink.run_animation(show_cursor=False)
     time.sleep(2) # Pausa para o usuário ver o logo.
 
     # 3. Inicia a interface do usuário.
