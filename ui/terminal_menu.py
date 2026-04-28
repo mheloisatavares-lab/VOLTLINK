@@ -1,6 +1,6 @@
 import os
 import webbrowser
-from core import user_manager, station_manager, pagamento
+from core import gerenciador_usuarios, gerenciador_eletropostos, pagamento
 from ui import logo_VoltLink
 
 def clear_screen():
@@ -31,7 +31,7 @@ def show_registration_screen():
         password = input("Crie uma senha (4-8 caracteres, 1 número, 1 maiúscula): ").strip()
         confirm_password = input("Confirme sua senha: ").strip()
 
-        is_valid, message = user_manager.validate_registration_data(name, email, phone, password, confirm_password)
+        is_valid, message = gerenciador_usuarios.validar_dados_cadastro(name, email, phone, password, confirm_password)
 
         if not is_valid:
             print(f"\n{message}")
@@ -41,7 +41,7 @@ def show_registration_screen():
             continue
 
         # Se a validação passou, registra o usuário
-        user_manager.register_new_user(name, email, phone, password)
+        gerenciador_usuarios.registrar_novo_usuario(name, email, phone, password)
         print("\nCadastro realizado com sucesso!")
         print(f"Usuário: {name} ({email})")
         input("\nPressione Enter para voltar ao menu...")
@@ -57,7 +57,7 @@ def show_login_screen():
     password = input("Digite sua senha: ").strip()
 
     # Chama a função do core para validar o login
-    is_logged_in, result = user_manager.login_user(email, password)
+    is_logged_in, result = gerenciador_usuarios.login_usuario(email, password)
 
     if is_logged_in:
         print(f"\nLogin bem-sucedido! Bem-vindo(a) de volta, {result['name']}!")
@@ -104,24 +104,24 @@ def show_user_dashboard(user_data):
                 endereco = input("Digite seu endereço atual (Rua, Número, Cidade): ").strip()
                 if endereco:
                     print("\nBuscando os 3 eletropostos VOLTLINK mais próximos...")
-                    postos_proximos = station_manager.get_closest_stations(endereco, limit=3)
+                    postos_proximos = gerenciador_eletropostos.obter_eletropostos_proximos(endereco, limite=3)
                     
                     if not postos_proximos:
                         print("\nNenhum eletroposto cadastrado no sistema ainda.")
                     else:
                         for i, st in enumerate(postos_proximos, 1):
-                            avg_rating = station_manager.get_station_average_rating(st['id'])
+                            avg_rating = gerenciador_eletropostos.obter_media_avaliacoes_eletroposto(st['id'])
                             estrelas = f"{avg_rating} ⭐" if avg_rating > 0 else "Sem avaliações"
                             status = "🟢 Disponível" if st['available_chargers'] > 0 else "🔴 Ocupado"
                             print(f"{i}. {st['name']} - {st['address']}")
                             print(f"   └─ Avaliação: {estrelas}")
                             print(f"   └─ Status: {status} ({st['available_chargers']}/{st['total_chargers']} livres)")
-                            print(f"   └─ Potência: {st['max_power_kw']} kW | Distância: {st['distance_km']} km\n")
+                            print(f"   └─ Potência: {st['max_power_kw']} kW | Distância: {st['distancia_km']} km\n")
                         
                         escolha = input("\nEscolha o número do eletroposto para navegar (ou Enter para voltar): ")
                         if escolha.isdigit() and 1 <= int(escolha) <= len(postos_proximos):
                             st_escolhido = postos_proximos[int(escolha)-1]
-                            link = station_manager.generate_maps_link(endereco, st_escolhido['address'])
+                            link = gerenciador_eletropostos.gerar_link_mapas(endereco, st_escolhido['address'])
                             
                             print(f"\nRota para {st_escolhido['name']} gerada com sucesso!")
                             print("Tentando abrir no seu navegador...")
@@ -137,7 +137,7 @@ def show_user_dashboard(user_data):
                     logo_VoltLink.display_header()
                     print("💳 Gestão de Pagamentos \n")
                     
-                    methods = pagamento.get_payment_methods(user_data['id'])
+                    methods = pagamento.obter_metodos_pagamento(user_data['id'])
                     if not methods:
                         print("Nenhuma forma de pagamento cadastrada.\n")
                     else:
@@ -161,7 +161,7 @@ def show_user_dashboard(user_data):
                         num = input("Número do Cartão (16 dígitos): ").replace(" ", "")
                         val = input("Validade (MM/AA): ").strip()
                         cvv = input("CVV (apenas para validação): ").strip()
-                        success, msg = pagamento.add_card(user_data['id'], m_type, nome, num, val, cvv)
+                        success, msg = pagamento.adicionar_cartao(user_data['id'], m_type, nome, num, val, cvv)
                         print(f"\n{msg}")
                         input("\nPressione Enter para continuar...")
                     elif sub_opt == '3':
@@ -171,7 +171,7 @@ def show_user_dashboard(user_data):
                             novo_num = input("Novo Número do Cartão (16 dígitos): ").replace(" ", "")
                             nova_val = input("Nova Validade (MM/AA): ").strip()
                             novo_cvv = input("Novo CVV (apenas para validação): ").strip()
-                            success, msg = pagamento.update_card(user_data['id'], m_id, novo_nome, novo_num, nova_val, novo_cvv)
+                            success, msg = pagamento.atualizar_cartao(user_data['id'], m_id, novo_nome, novo_num, nova_val, novo_cvv)
                             print(f"\n{msg}")
                         except ValueError:
                             print("\nID inválido.")
@@ -179,7 +179,7 @@ def show_user_dashboard(user_data):
                     elif sub_opt == '4':
                         try:
                             m_id = int(input("\nDigite o ID da forma de pagamento a remover: ").strip())
-                            success, msg = pagamento.delete_payment_method(user_data['id'], m_id)
+                            success, msg = pagamento.remover_metodo_pagamento(user_data['id'], m_id)
                             print(f"\n{msg}")
                         except ValueError:
                             print("\nID inválido.")
@@ -210,12 +210,12 @@ def show_user_dashboard(user_data):
                 logo_VoltLink.display_header()
                 print("⭐ Avaliar Eletropostos \n")
                 
-                stations = station_manager.get_all_stations()
+                stations = gerenciador_eletropostos.obter_todos_eletropostos()
                 if not stations:
                     print("Nenhum eletroposto cadastrado.")
                 else:
                     for st in stations:
-                        avg_rating = station_manager.get_station_average_rating(st['id'])
+                        avg_rating = gerenciador_eletropostos.obter_media_avaliacoes_eletroposto(st['id'])
                         estrelas = f"{avg_rating} ⭐" if avg_rating > 0 else "Sem avaliações"
                         print(f"ID: {st['id']:<3} | {st['name']} ({estrelas})")
                     
@@ -228,7 +228,7 @@ def show_user_dashboard(user_data):
                     if sub_opt == '1':
                         try:
                             st_id = int(input("Digite o ID do eletroposto: ").strip())
-                            reviews = station_manager.get_station_reviews(st_id)
+                            reviews = gerenciador_eletropostos.obter_avaliacoes_eletroposto(st_id)
                             print("\n--- Avaliações ---")
                             if not reviews:
                                 print("Nenhuma avaliação encontrada para este posto.")
@@ -243,7 +243,7 @@ def show_user_dashboard(user_data):
                             rating = int(input("Nota (0 a 5): ").strip())
                             if 0 <= rating <= 5:
                                 comment = input("Deixe um comentário (opcional): ").strip()
-                                success, msg = station_manager.add_review(st_id, user_name, rating, comment)
+                                success, msg = gerenciador_eletropostos.adicionar_avaliacao(st_id, user_name, rating, comment)
                                 print(f"\n{msg}")
                             else:
                                 print("\nErro: A nota deve ser entre 0 e 5.")
@@ -263,7 +263,7 @@ def show_user_dashboard(user_data):
                     total_chargers = int(input("Quantidade total de carregadores: ").strip())
                     available_chargers = int(input("Quantidade de carregadores disponíveis agora: ").strip())
                     max_power = float(input("Potência máxima por carregador (kW): ").strip())
-                    success, msg = station_manager.add_station(nome_posto, end_posto, total_chargers, available_chargers, max_power)
+                    success, msg = gerenciador_eletropostos.adicionar_eletroposto(nome_posto, end_posto, total_chargers, available_chargers, max_power)
                     print(f"\n{msg}")
                 except ValueError:
                     print("\nErro: Você deve digitar números válidos para quantidade e potência.")
@@ -273,7 +273,7 @@ def show_user_dashboard(user_data):
                 logo_VoltLink.display_header()
                 print("🔄  [Admin] Atualizar Carregadores Disponíveis \n")
                 
-                stations = station_manager.get_all_stations()
+                stations = gerenciador_eletropostos.obter_todos_eletropostos()
                 if not stations:
                     print("Nenhum eletroposto cadastrado.")
                 else:
@@ -284,7 +284,7 @@ def show_user_dashboard(user_data):
                         st_id = int(input("\nDigite o ID do eletroposto que deseja atualizar (ou 0 para cancelar): ").strip())
                         if st_id != 0:
                             novos_disponiveis = int(input("Nova quantidade de carregadores disponíveis: ").strip())
-                            success, msg = station_manager.update_available_chargers(st_id, novos_disponiveis)
+                            success, msg = gerenciador_eletropostos.atualizar_carregadores_disponiveis(st_id, novos_disponiveis)
                             print(f"\n{msg}")
                     except ValueError:
                         print("\nErro: Você deve digitar números válidos.")

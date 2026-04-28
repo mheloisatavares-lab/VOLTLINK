@@ -1,62 +1,62 @@
 from database.db_handler import db_singleton
 
-def add_card(user_id, method_type, card_name, card_number, card_expiry, cvv):
-    """Valida e salva um novo cartão no banco de dados."""
-    if not card_name:
+def adicionar_cartao(id_usuario, tipo_metodo, nome_cartao, numero_cartao, validade_cartao, cvv):
+    # Valida e salva um novo cartão no banco de dados.
+    if not nome_cartao:
         return (False, "Erro: O nome não pode estar vazio.")
-    if len(card_number) != 16 or not card_number.isdigit():
+    if len(numero_cartao) != 16 or not numero_cartao.isdigit():
         return (False, "Erro: Cartão inválido! Digite os 16 números.")
-    if "/" not in card_expiry or len(card_expiry) != 5:
+    if "/" not in validade_cartao or len(validade_cartao) != 5:
         return (False, "Erro: Formato de validade inválido (use MM/AA).")
     if len(cvv) != 3 or not cvv.isdigit():
         return (False, "Erro: CVV inválido!")
 
-    conn = db_singleton.get_connection()
-    if not conn: return (False, "Erro de banco de dados.")
+    conexao = db_singleton.get_connection()
+    if not conexao: return (False, "Erro de banco de dados.")
 
     # Por segurança, guardamos apenas os 4 últimos dígitos do cartão
-    masked_number = "**** **** **** " + card_number[-4:]
+    numero_mascarado = "**** **** **** " + numero_cartao[-4:]
 
     try:
-        conn.execute("INSERT INTO payment_methods (user_id, method_type, card_name, card_number, card_expiry) VALUES (?, ?, ?, ?, ?)",
-                     (user_id, method_type, card_name, masked_number, card_expiry))
-        conn.commit()
-        return (True, f"Cartão de {method_type} cadastrado com sucesso!")
+        conexao.execute("INSERT INTO payment_methods (user_id, method_type, card_name, card_number, card_expiry) VALUES (?, ?, ?, ?, ?)",
+                     (id_usuario, tipo_metodo, nome_cartao, numero_mascarado, validade_cartao))
+        conexao.commit()
+        return (True, f"Cartão de {tipo_metodo} cadastrado com sucesso!")
     except Exception as e:
         return (False, f"Erro ao salvar cartão: {e}")
 
-def get_payment_methods(user_id):
+def obter_metodos_pagamento(id_usuario):
     """Retorna todas as formas de pagamento de um usuário."""
-    conn = db_singleton.get_connection()
-    if not conn: return []
-    return conn.execute("SELECT * FROM payment_methods WHERE user_id = ?", (user_id,)).fetchall()
+    conexao = db_singleton.get_connection()
+    if not conexao: return []
+    return conexao.execute("SELECT * FROM payment_methods WHERE user_id = ?", (id_usuario,)).fetchall()
 
-def delete_payment_method(user_id, method_id):
+def remover_metodo_pagamento(id_usuario, id_metodo):
     """Remove uma forma de pagamento."""
-    conn = db_singleton.get_connection()
+    conexao = db_singleton.get_connection()
     try:
-        conn.execute("DELETE FROM payment_methods WHERE id = ? AND user_id = ?", (method_id, user_id))
-        conn.commit()
+        conexao.execute("DELETE FROM payment_methods WHERE id = ? AND user_id = ?", (id_metodo, id_usuario))
+        conexao.commit()
         return (True, "Forma de pagamento removida com sucesso!")
     except Exception as e:
         return (False, f"Erro ao remover: {e}")
 
-def update_card(user_id, method_id, card_name, card_number, card_expiry, cvv):
+def atualizar_cartao(id_usuario, id_metodo, nome_cartao, numero_cartao, validade_cartao, cvv):
     """Edita os dados de um cartão cadastrado."""
-    if not card_name:
+    if not nome_cartao:
         return (False, "Erro: O nome não pode estar vazio.")
-    if len(card_number) != 16 or not card_number.isdigit():
+    if len(numero_cartao) != 16 or not numero_cartao.isdigit():
         return (False, "Erro: Cartão inválido! Digite os 16 números.")
-    if "/" not in card_expiry or len(card_expiry) != 5:
+    if "/" not in validade_cartao or len(validade_cartao) != 5:
         return (False, "Erro: Formato de validade inválido (use MM/AA).")
     if len(cvv) != 3 or not cvv.isdigit():
         return (False, "Erro: CVV inválido!")
 
-    conn = db_singleton.get_connection()
-    masked_number = "**** **** **** " + card_number[-4:]
+    conexao = db_singleton.get_connection()
+    numero_mascarado = "**** **** **** " + numero_cartao[-4:]
     try:
-        conn.execute("UPDATE payment_methods SET card_name = ?, card_number = ?, card_expiry = ? WHERE id = ? AND user_id = ?", (card_name, masked_number, card_expiry, method_id, user_id))
-        conn.commit()
+        conexao.execute("UPDATE payment_methods SET card_name = ?, card_number = ?, card_expiry = ? WHERE id = ? AND user_id = ?", (nome_cartao, numero_mascarado, validade_cartao, id_metodo, id_usuario))
+        conexao.commit()
         return (True, "Cartão atualizado com sucesso!")
     except Exception as e:
         return (False, f"Erro ao atualizar: {e}")
